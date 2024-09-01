@@ -1,15 +1,16 @@
 import re
 import os
+from tqdm import tqdm
+from tokenizers import Tokenizer, trainers, pre_tokenizers
+from tokenizers.models import BPE
+from tokenizers.trainers import BpeTrainer
+from tokenizers.pre_tokenizers import Whitespace
+from huggingface_hub import HfApi, HfFolder
+from typing import List
 
 def load_tex_file(filepath):
     with open(filepath, 'r', encoding='utf-8') as file:
         return [line.strip() for line in file]
-
-def process_line(line):
-    return re.sub(r'(\$.*?\$|\\\[.*?\\\]|\\\(.*?\\\))', '', line)
-
-def process_corpus(corpus):
-    return [process_line(line) for line in corpus]
 
 def find_tex_files(root_folder):
     tex_files = []
@@ -20,32 +21,14 @@ def find_tex_files(root_folder):
     return tex_files
 
 def process_all_tex_files(root_folder):
-    all_processed_corpus = []
+    all_corpus = []
     tex_files = find_tex_files(root_folder)
     
     for filepath in tex_files:
         corpus = load_tex_file(filepath)
-        processed_corpus = process_corpus(corpus)
-        all_processed_corpus.extend(processed_corpus)
+        all_corpus.extend(corpus)
     
-    return all_processed_corpus
-
-# 사용 예시
-root_folder = r'C:\Users\wjdrb\Downloads\drive-download-20240719T063242Z-001'
-processed_corpus = process_all_tex_files(root_folder)
-
-
-corpus = ["F(x)={\sqrt{\frac{10x^{-8}}{-8}}}+C_{1} =-{\frac{5}{4x^{8}}}+C_{1}\quad{\mathrm {if~}}x<0.",
-"F(x)=\sqrt{10}x^{-8/-8}+C_{1}=-\frac{5} {4}x^{8}+C_{1}\quad\mathrm{if~}x<0."]
-
-
-from tqdm import tqdm
-from tokenizers import Tokenizer, trainers, pre_tokenizers
-from tokenizers.models import BPE
-from tokenizers.trainers import BpeTrainer
-from tokenizers.pre_tokenizers import Whitespace
-from huggingface_hub import HfApi, HfFolder
-from typing import List
+    return all_corpus
 
 def train_and_upload_tokenizer(corpus: List[str], vocab_size: int = 30000, repo_name: str = "Kyudan/TeXBLUE-Tokenizer"):
     # 토크나이저와 트레이너 초기화
@@ -75,4 +58,16 @@ def train_and_upload_tokenizer(corpus: List[str], vocab_size: int = 30000, repo_
     
     print(f"Tokenizer uploaded to Hugging Face Hub under the repository {repo_name}")
 
-    train_and_upload_tokenizer(processed_corpus)
+# 사용 예시
+root_folder = r'C:\Users\wjdrb\Downloads\drive-download-20240719T063242Z-001'
+full_corpus = process_all_tex_files(root_folder)
+
+# 추가 예제 코퍼스
+additional_corpus = [
+    "F(x)={\sqrt{\frac{10x^{-8}}{-8}}}+C_{1} =-{\frac{5}{4x^{8}}}+C_{1}\quad{\mathrm {if~}}x<0.",
+    "F(x)=\sqrt{10}x^{-8/-8}+C_{1}=-\frac{5} {4}x^{8}+C_{1}\quad\mathrm{if~}x<0."
+]
+
+full_corpus.extend(additional_corpus)
+
+train_and_upload_tokenizer(full_corpus)
