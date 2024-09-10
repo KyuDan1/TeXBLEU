@@ -6,7 +6,7 @@ import math
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
+#print(f"Using device: {device}")
 
 # 토크나이저 및 모델 로드
 tokenizer = GPT2TokenizerFast.from_pretrained('.')
@@ -20,7 +20,7 @@ new_embeddings_state = torch.load('new_embeddings.pth')
 new_vocab_size, embedding_dim = new_embeddings_state['weight'].shape
 new_embeddings = torch.nn.Embedding(new_vocab_size, embedding_dim).to(device)
 new_embeddings.load_state_dict(new_embeddings_state)
-print(f"Loaded new embeddings with shape: {new_embeddings.weight.shape}")
+#print(f"Loaded new embeddings with shape: {new_embeddings.weight.shape}")
 
 def spacing(text):
     result = []
@@ -38,7 +38,7 @@ def spacing(text):
 def get_token_embeddings(sentence):
     sentence = spacing(sentence)
     tokens = tokenizer.encode(sentence, truncation=True, max_length=512)
-    print(f"Tokenized text: {tokens}")
+    #print(f"Tokenized text: {tokens}")
     decoded_tokens = [tokenizer.decode([token]) for token in tokens]
     print(f"Decoded tokens: {decoded_tokens}")
     
@@ -50,7 +50,8 @@ def get_token_embeddings(sentence):
     else:
         token_embeddings = embedding_layer(token_ids)
     
-    pos_embeddings = positional_embedding(positions)
+    pos_embeddings = positional_embedding(positions) * 100
+    
     
     return list(zip(token_embeddings[0], pos_embeddings[0]))
 
@@ -67,7 +68,6 @@ def token_distance(token1, token2, w_emb=0.5, w_pos=0.5, alpha=2, beta=0.1):
     # 위치 거리에 비선형성 추가
     pos_dist = math.tanh(beta * torch.abs(pos1 - pos2).float().mean().item())
     
-    # 가중 합산
     distance = w_emb * emb_dist + w_pos * pos_dist
     
     return distance
@@ -87,9 +87,9 @@ def n_gram_similarity(ref_tokens, pred_tokens, n, max_d=2.0):
         for ref_ngram, pred_ngram in zip(ref_ngrams[:L_n], pred_ngrams[:L_n])
     )
     
-    return 1 - (total_distance / (L_n * n * max_d))
+    return 1 - (total_distance / (L_n * n)) #1 - (total_distance / (L_n * n * max_d))
 
-def texbleu(reference, prediction, max_n=4, weights=None):
+def texbleu(reference, prediction, max_n=2, weights=None):
     if weights is None:
         weights = [1/max_n] * max_n
     
@@ -113,10 +113,10 @@ def texbleu(reference, prediction, max_n=4, weights=None):
     length_ratio = min(ref_length, pred_length) / max(ref_length, pred_length)
     
     # BLEU 점수 계산
-    bleu_score = bp * math.exp(sum(w * math.log(max(s, 1e-10)) 
+    bleu_score = math.exp(sum(w * math.log(max(s, 1e-10)) 
                       for w, s in zip(weights, n_gram_scores)))
     
     # 길이 페널티를 적용한 최종 점수 계산
-    final_score = bleu_score * length_ratio
+    final_score = bleu_score # * length_ratio
     
     return round(final_score, 4)
