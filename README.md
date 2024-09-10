@@ -1,6 +1,9 @@
 # TeXBLEU: Automatic Metric for Evaluate LaTeX Format
 
 
+You can check out TeXBLEU demo at huggingface space!
+https://huggingface.co/spaces/Kyudan/TeXBLEU
+
 
 # Algorithm: Computing TexBLEU
 
