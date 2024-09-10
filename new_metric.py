@@ -8,24 +8,29 @@ import math
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #print(f"Using device: {device}")
 
-# 토크나이저 및 모델 로드
-tokenizer = GPT2TokenizerFast.from_pretrained('.')
-gpt2_model = GPT2Model.from_pretrained('gpt2')
-embedding_layer = gpt2_model.wte.to(device)
-positional_embedding = gpt2_model.wpe.to(device)
+# 토크나이저 및 모델 로드를 함수 내부로 이동
+def load_models_and_tokenizer():
+    global tokenizer, gpt2_model, embedding_layer, positional_embedding, new_embeddings
+    
+    tokenizer = GPT2TokenizerFast.from_pretrained('gpt2')
+    gpt2_model = GPT2Model.from_pretrained('gpt2')
+    embedding_layer = gpt2_model.wte.to(device)
+    positional_embedding = gpt2_model.wpe.to(device)
 
-# 새로운 임베딩 로드 (필요한 경우)
+    # 새로운 임베딩 로드 (필요한 경우)
+    try:
+        if device == 'cuda':
+            new_embeddings_state = torch.load('new_embeddings.pth')
+        else:
+            new_embeddings_state = torch.load('new_embeddings.pth', map_location=torch.device('cpu'))
 
+        new_vocab_size, embedding_dim = new_embeddings_state['weight'].shape
+        new_embeddings = torch.nn.Embedding(new_vocab_size, embedding_dim).to(device)
+        new_embeddings.load_state_dict(new_embeddings_state)
+    except FileNotFoundError:
+        print("Warning: new_embeddings.pth not found. Using default embeddings.")
+        new_embeddings = None
 
-if device =='cuda':
-    new_embeddings_state = torch.load('new_embeddings.pth')
-else:
-    new_embeddings_state = torch.load('new_embeddings.pth',map_location=torch.device('cpu'))
-
-new_vocab_size, embedding_dim = new_embeddings_state['weight'].shape
-new_embeddings = torch.nn.Embedding(new_vocab_size, embedding_dim).to(device)
-new_embeddings.load_state_dict(new_embeddings_state)
-#print(f"Loaded new embeddings with shape: {new_embeddings.weight.shape}")
 
 def spacing(text):
     result = []
@@ -125,3 +130,6 @@ def texbleu(reference, prediction, max_n=2, weights=None):
     final_score = bleu_score # * length_ratio
     
     return round(final_score, 4)
+
+
+load_models_and_tokenizer()
