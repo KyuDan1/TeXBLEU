@@ -16,7 +16,12 @@ positional_embedding = gpt2_model.wpe.to(device)
 
 # 새로운 임베딩 로드 (필요한 경우)
 
-new_embeddings_state = torch.load('new_embeddings.pth')
+
+if device =='cuda':
+    new_embeddings_state = torch.load('new_embeddings.pth')
+else:
+    new_embeddings_state = torch.load('new_embeddings.pth',map_location=torch.device('cpu'))
+
 new_vocab_size, embedding_dim = new_embeddings_state['weight'].shape
 new_embeddings = torch.nn.Embedding(new_vocab_size, embedding_dim).to(device)
 new_embeddings.load_state_dict(new_embeddings_state)
