@@ -1,6 +1,6 @@
 # TeXBLEU: Automatic Metric for Evaluate LaTeX Format
 
-
+### Accepted in ICASSP 2025!
 
 # Algorithm: Computing TexBLEU
 
